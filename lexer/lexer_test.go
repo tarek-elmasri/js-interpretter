@@ -24,6 +24,8 @@ func TestTokenize(t *testing.T) {
 	.sa
 	async await
 	new
+	!
+	!=
 	`
 	tests := []struct {
 		expectedType    TokenType
@@ -77,6 +79,8 @@ func TestTokenize(t *testing.T) {
 		{ASYNC, "async"},
 		{AWAIT, "await"},
 		{NEW, "new"},
+		{NOT, "!"},
+		{NOTEQUAL, "!="},
 		{EOF, "EOF"},
 	}
 

@@ -9,6 +9,8 @@ type TokenType string
 
 const (
 	IDENT              = "IDENT"
+	NOT                = "!"
+	NOTEQUAL           = "!="
 	COMMA              = ","
 	COLON              = ":"
 	SEMICOLON          = ";"
@@ -102,8 +104,10 @@ func (l *Lexer) NextToken() Token {
 	var tok Token
 
 	l.skipWhitespace()
-	switch l.ch {
 
+	switch l.ch {
+	case '!':
+		tok = l.readNotOrNotEqual()
 	case '=':
 		tok = l.readEqualOrAssignOrFuncArrow()
 	case '-':
@@ -151,15 +155,7 @@ func (l *Lexer) NextToken() Token {
 		tok = newToken(EOF, "EOF", l.currentLine, l.inlinePosition)
 	default:
 		if isLetter(l.ch) {
-			tok.Literal = l.readIdentifier()
-			tt, ok := keywordMap[tok.Literal]
-			if ok {
-				tok.TokenType = tt
-			} else {
-				tok.TokenType = IDENT
-			}
-			tok.LineNumber = l.currentLine
-			tok.PositionNumber = l.inlinePosition
+			tok = l.readIdentifier()
 			return tok
 		} else if isDigit(l.ch) {
 			tok = l.readDigit()
@@ -179,8 +175,20 @@ func newToken(tokenType TokenType, tokenLiteral string, line, position int) Toke
 	return Token{TokenType: tokenType, Literal: tokenLiteral, LineNumber: line, PositionNumber: position}
 }
 
-func (l *Lexer) readIdentifier() string {
+func (l *Lexer) readNotOrNotEqual() Token {
+	peekCh := l.peekChars(1)[0]
+
+	if peekCh == '=' {
+		l.readChar()
+		return newToken(NOTEQUAL, "!=", l.currentLine, l.inlinePosition)
+	} else {
+		return newToken(NOT, "!", l.currentLine, l.inlinePosition)
+	}
+}
+
+func (l *Lexer) readIdentifier() Token {
 	startPos := l.position
+
 	for l.readPosition < len(l.source) {
 		if !isLetter(l.ch) && !isDigit(l.ch) {
 			break
@@ -188,7 +196,18 @@ func (l *Lexer) readIdentifier() string {
 		l.readChar()
 	}
 
-	return string(l.source[startPos:l.position])
+	var tt TokenType
+	tl := string(l.source[startPos:l.position])
+
+	// match ident. with keyword
+	t, ok := keywordMap[tl]
+	if ok {
+		tt = t
+	} else {
+		tt = IDENT
+	}
+
+	return newToken(tt, tl, l.currentLine, l.inlinePosition)
 }
 
 func (l *Lexer) readChar() {

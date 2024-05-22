@@ -2,6 +2,8 @@ package ast
 
 import (
 	"bytes"
+	"fmt"
+
 	"github.com/tarek-elmasri/compiler/lexer"
 )
 
@@ -18,6 +20,19 @@ type Statement interface {
 type Expression interface {
 	Node
 	expressionNode()
+}
+
+type PrefixExpression struct {
+	Token    lexer.Token
+	Right    Expression
+	Operator string
+}
+
+type InfixExpression struct {
+	Token    lexer.Token
+	Right    Expression
+	Left     Expression
+	Operator string
 }
 
 type Program struct {
@@ -62,7 +77,7 @@ func (ls *LetStatement) String() string {
 	return out.String()
 }
 
-func (id *Identifier) expresseionNode() {}
+func (id *Identifier) expressionNode() {}
 func (id *Identifier) TokenLiteral() string {
 	return id.Token.Literal
 }
@@ -94,6 +109,11 @@ type ExpressionStatement struct {
 	Expression Expression
 }
 
+type IntLiteralExpression struct {
+	Token lexer.Token
+	Value int64
+}
+
 func (es *ExpressionStatement) TokenLiteral() string {
 	return es.Token.Literal
 }
@@ -102,4 +122,45 @@ func (es *ExpressionStatement) statementNode() {}
 func (es *ExpressionStatement) String() string {
 	// TODO: return expression string for now!
 	return es.Expression.String()
+}
+
+func (pe *PrefixExpression) TokenLiteral() string {
+	return pe.Token.Literal
+}
+
+func (pe *PrefixExpression) expressionNode() {}
+
+func (pe *PrefixExpression) String() string {
+	out := bytes.NewBuffer([]byte{})
+	out.WriteString("(")
+	out.WriteString(pe.Operator)
+	out.WriteString(pe.Right.String())
+	out.WriteString(")")
+	return out.String()
+}
+
+func (in *InfixExpression) TokenLiteral() string {
+	return in.Token.Literal
+}
+
+func (in *InfixExpression) expressionNode() {}
+
+func (in *InfixExpression) String() string {
+	out := bytes.NewBuffer([]byte{})
+	out.WriteString(in.Left.String())
+	out.WriteString(" ")
+	out.WriteString(in.Operator)
+	out.WriteString(" ")
+	out.WriteString(in.Right.String())
+	return out.String()
+}
+
+func (e *IntLiteralExpression) TokenLiteral() string {
+	return e.Token.Literal
+}
+
+func (e *IntLiteralExpression) expressionNode() {}
+
+func (e *IntLiteralExpression) String() string {
+	return fmt.Sprint(e.Value)
 }

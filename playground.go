@@ -1,9 +1,13 @@
 package main
 
-import "fmt"
+import (
+	"os"
+
+	repl "github.com/tarek-elmasri/compiler/repel"
+)
 
 func main() {
-	ch := rune(0)
-	fmt.Println(string(ch))
-	fmt.Println(len(string(ch)))
+
+	r := repl.New(os.Stdin)
+	r.Start()
 }

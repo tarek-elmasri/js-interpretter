@@ -2,7 +2,6 @@ package lexer
 
 import (
 	"log/slog"
-	"unicode"
 )
 
 type TokenType string
@@ -189,10 +188,7 @@ func (l *Lexer) readNotOrNotEqual() Token {
 func (l *Lexer) readIdentifier() Token {
 	startPos := l.position
 
-	for l.readPosition < len(l.source) {
-		if !isLetter(l.ch) && !isDigit(l.ch) {
-			break
-		}
+	for isLetter(l.ch) || isDigit(l.ch) {
 		l.readChar()
 	}
 
@@ -224,12 +220,12 @@ func (l *Lexer) readChar() {
 	}
 
 	l.position = l.readPosition
-	l.readPosition++
+	l.readPosition += 1
 	l.inlinePosition++
 }
 
 func (l *Lexer) skipWhitespace() {
-	for unicode.IsSpace(rune(l.ch)) {
+	for l.ch == ' ' || l.ch == '\n' || l.ch == '\r' || l.ch == '\t' {
 		l.readChar()
 	}
 }
@@ -245,7 +241,7 @@ func isDigit(ch byte) bool {
 func (l *Lexer) readDigit() Token {
 	hasDot := false
 	startPosition := l.position
-	for (isDigit(l.ch) || isDot(l.ch)) && l.ch != 0 {
+	for isDigit(l.ch) || isDot(l.ch) {
 		// break if already has a dot
 		if isDot(l.ch) && hasDot {
 			break

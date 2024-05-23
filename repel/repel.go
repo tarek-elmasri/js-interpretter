@@ -30,7 +30,7 @@ func (r *Repl) Start() {
 			return
 		}
 
-		line := scanner.Text() + "\n"
+		line := scanner.Text()
 		l := lexer.New(line)
 		for t := l.NextToken(); t.TokenType != lexer.EOF; t = l.NextToken() {
 			fmt.Printf("%+v\n", t)

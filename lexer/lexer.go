@@ -209,7 +209,6 @@ func (l *Lexer) readIdentifier() Token {
 func (l *Lexer) readChar() {
 	if l.readPosition >= len(l.source) {
 		l.ch = 0
-		return
 	} else {
 		l.ch = l.source[l.readPosition]
 	}

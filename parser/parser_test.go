@@ -204,3 +204,51 @@ func TestParseInfixExpression(t *testing.T) {
 		t.Errorf("expected left expression value to be %d. recieved: %d", expectedLeftExp.Value, leftPrefixExp.Value)
 	}
 }
+
+func TestParsingExpression(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{
+			"a + b",
+			"(a + b)",
+		},
+		{
+			"!a * -5",
+			"((!a) * (-5))",
+		},
+		{
+			"-5+6*7",
+			"((-5) + (6 * 7))",
+		},
+		{
+			"5 < 4 != 3 > 4",
+			"((5 < 4) != (3 > 4))",
+		}, {
+			"a + b * c + d / e - f",
+			"(((a + (b * c)) + (d / e)) - f)",
+		},
+		{
+			"3 + 4 * 5 == 3 * 1 + 4 * 5",
+			"((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))",
+		},
+		{
+			"5 > 4 == 3 < 4",
+			"((5 > 4) == (3 < 4))",
+		},
+		{
+			"5 * 2 + 12 -1 / 5 + 2 * 12",
+			"",
+		},
+	}
+
+	for _, test := range tests {
+		l := lexer.New(test.input)
+		p := New(l)
+		exp := p.parseExpression(LOWEST)
+		if test.expected != exp.String() {
+			t.Errorf("expected result to be: %s. recieved: %s.", test.expected, exp.String())
+		}
+	}
+}

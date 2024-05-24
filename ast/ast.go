@@ -2,8 +2,6 @@ package ast
 
 import (
 	"bytes"
-	"fmt"
-
 	"github.com/tarek-elmasri/compiler/lexer"
 )
 
@@ -147,11 +145,13 @@ func (in *InfixExpression) expressionNode() {}
 
 func (in *InfixExpression) String() string {
 	out := bytes.NewBuffer([]byte{})
+	out.WriteString("(")
 	out.WriteString(in.Left.String())
 	out.WriteString(" ")
 	out.WriteString(in.Operator)
 	out.WriteString(" ")
 	out.WriteString(in.Right.String())
+	out.WriteString(")")
 	return out.String()
 }
 
@@ -162,5 +162,5 @@ func (e *IntLiteralExpression) TokenLiteral() string {
 func (e *IntLiteralExpression) expressionNode() {}
 
 func (e *IntLiteralExpression) String() string {
-	return fmt.Sprint(e.Value)
+	return e.TokenLiteral()
 }

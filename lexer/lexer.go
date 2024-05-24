@@ -14,7 +14,9 @@ const (
 	COLON              = ":"
 	SEMICOLON          = ";"
 	GREATERTHAN        = ">"
+	GREATERTHANEQUAL   = ">="
 	LOWERTHAN          = "<"
+	LOWERTHANEQUAL     = "<="
 	FUNCARROW          = "=>"
 	ASSIGN             = "="
 	EQUAL              = "=="
@@ -30,6 +32,9 @@ const (
 	RPRACES            = "["
 	RSQUERLI           = "}"
 	LSQUERLI           = "{"
+	LPARANC            = "("
+	ARROWFUNCLPARANC   = "("
+	RPARANC            = ")"
 	STRING             = "STRING"
 	INTERPOLATEDSTRING = "INTERPOLATEDSTRING"
 	INT                = "INT"
@@ -125,6 +130,10 @@ func (l *Lexer) NextToken() Token {
 		tok = newToken(LSQUERLI, "{", l.currentLine, l.inlinePosition)
 	case '}':
 		tok = newToken(RSQUERLI, "}", l.currentLine, l.inlinePosition)
+	case '(':
+		tok = newToken(LPARANC, "(", l.currentLine, l.inlinePosition)
+	case ')':
+		tok = newToken(RPARANC, ")", l.currentLine, l.inlinePosition)
 	case ',':
 		tok = newToken(COMMA, ",", l.currentLine, l.inlinePosition)
 	case ':':
@@ -141,9 +150,9 @@ func (l *Lexer) NextToken() Token {
 		// return as reading string will pass the qutes
 		return newToken(INTERPOLATEDSTRING, l.readString(), l.currentLine, l.inlinePosition)
 	case '>':
-		tok = newToken(GREATERTHAN, ">", l.currentLine, l.inlinePosition)
+		tok = l.readGreaterThan()
 	case '<':
-		tok = newToken(LOWERTHAN, "<", l.currentLine, l.inlinePosition)
+		tok = l.readLowerThan()
 	case '.':
 		peekChar := l.peekChars(1)
 		if isDigit(peekChar[0]) {
@@ -175,10 +184,13 @@ func newToken(tokenType TokenType, tokenLiteral string, line, position int) Toke
 }
 
 func (l *Lexer) readNotOrNotEqual() Token {
-	peekCh := l.peekChars(1)[0]
+	peekChs := l.peekChars(2)
 
-	if peekCh == '=' {
+	if peekChs[0] == '=' {
 		l.readChar()
+		if peekChs[1] == '=' {
+			l.readChar()
+		}
 		return newToken(NOTEQUAL, "!=", l.currentLine, l.inlinePosition)
 	} else {
 		return newToken(NOT, "!", l.currentLine, l.inlinePosition)
@@ -287,15 +299,17 @@ func (l *Lexer) readString() string {
 	return str
 }
 
-//	func (l *lexer) readFor(ch byte) string {
-//		startPosition := l.position
-//
-//		for l.ch != ch && l.ch != 0 {
-//			l.readChar()
-//		}
-//
-//		return l.source[startPosition:l.position]
-//	}
+func (l *Lexer) peekFor(ch byte) (n int) {
+	for p := l.readPosition; p <= len(l.source); p++ {
+		n++
+		if l.source[p] == ch {
+			return n
+		}
+	}
+
+	return 0
+}
+
 func (l *Lexer) peekChars(n int) []byte {
 	chars := make([]byte, n, n)
 	for i := 0; i < n; i++ {
@@ -335,3 +349,49 @@ func (l *Lexer) readEqualOrAssignOrFuncArrow() Token {
 	l.readChar()
 	return newToken(EQUAL, "===", l.currentLine, l.inlinePosition)
 }
+
+func (l *Lexer) readGreaterThan() Token {
+	peekCh := l.peekChars(1)[0]
+	if peekCh == '=' {
+		l.readChar()
+		return Token{TokenType: GREATERTHANEQUAL, Literal: ">=", LineNumber: l.currentLine, PositionNumber: l.inlinePosition}
+	} else {
+		return Token{TokenType: GREATERTHAN, Literal: ">", LineNumber: l.currentLine, PositionNumber: l.inlinePosition}
+	}
+}
+
+func (l *Lexer) readLowerThan() Token {
+	peekCh := l.peekChars(1)[0]
+	if peekCh == '=' {
+		l.readChar()
+		return Token{TokenType: LOWERTHANEQUAL, Literal: "<=", LineNumber: l.currentLine, PositionNumber: l.inlinePosition}
+	} else {
+		return Token{TokenType: LOWERTHAN, Literal: "<", LineNumber: l.currentLine, PositionNumber: l.inlinePosition}
+	}
+}
+
+// Checks if the upcoming token should be an anonymous function
+func (l *Lexer) isFunctionParenthesis() bool {
+	// position of closed parethensis
+	n := l.peekFor(')')
+	if n == 0 {
+		return false
+	}
+
+	// move to first letter
+	p := l.position + n + 1
+	for p < len(l.source) {
+		if l.source[p] != ' ' {
+			break
+		}
+		p++
+	}
+
+	if p+1 >= len(l.source) {
+		return false
+	}
+	return l.source[p] == '=' && l.source[p+1] == '>'
+}
+
+// TODO:
+// ++ / --

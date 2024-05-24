@@ -14,6 +14,8 @@ func TestTokenize(t *testing.T) {
 	export default as
 	>
 	<
+	>=
+	<=
 	 function
 	.
 	=>
@@ -67,6 +69,8 @@ func TestTokenize(t *testing.T) {
 		{AS, "as"},
 		{GREATERTHAN, ">"},
 		{LOWERTHAN, "<"},
+		{GREATERTHANEQUAL, ">="},
+		{LOWERTHANEQUAL, "<="},
 		{FUNC, "function"},
 		{DOT, "."},
 		{FUNCARROW, "=>"},
@@ -94,5 +98,27 @@ func TestTokenize(t *testing.T) {
 			t.Fail()
 		}
 
+	}
+}
+
+func TestIsFunctionParanethesis(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected bool
+	}{
+		{"()=>", true},
+		{"()=", false},
+		{"(ab,cd)   =>", true},
+		{"(abc,c)  =", false},
+		{"(abc,c)", false},
+		{"(abc,c)= >", false},
+	}
+
+	for _, test := range tests {
+		l := New(test.input)
+		result := l.isFunctionParenthesis()
+		if result != test.expected {
+			t.Errorf("test input: %s. expected: %v", test.input, test.expected)
+		}
 	}
 }

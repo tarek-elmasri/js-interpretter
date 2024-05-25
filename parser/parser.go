@@ -48,11 +48,15 @@ func New(l *lexer.Lexer) *Parser {
 		infixFns:  make(map[lexer.TokenType]infixFn),
 		errors:    []string{},
 	}
+
+	// prefix operations
 	p.registerPrefixFunc(lexer.IDENT, p.parseIdentifier)
 	p.registerPrefixFunc(lexer.INT, p.parseIntLiteral)
-	// prefix operations
 	p.registerPrefixFunc(lexer.NOT, p.parsePrefixExpression)
 	p.registerPrefixFunc(lexer.MINUS, p.parsePrefixExpression)
+	p.registerPrefixFunc(lexer.LPARANC, p.parseGroupExpression)
+	p.registerPrefixFunc(lexer.FUNC, p.parseFunctionExpression)
+	p.registerPrefixFunc(lexer.FUNCLPARANC, p.parseFunctionExpression)
 	// infix operations
 	p.registerInfixFunc(lexer.EQUAL, p.parseInfixExpression)
 	p.registerInfixFunc(lexer.NOTEQUAL, p.parseInfixExpression)
@@ -83,6 +87,85 @@ func (p *Parser) nextToken() {
 }
 
 func (p *Parser) Errors() []string { return p.errors }
+
+// "(5+2) + 2"
+func (p *Parser) parseGroupExpression() ast.Expression {
+	p.nextToken()
+	exp := p.parseExpression(LOWEST)
+
+	if !p.expectPeek(lexer.RPARANC) {
+		return nil
+	}
+	return exp
+}
+
+func (p *Parser) parseBlockStatement() *ast.BlockStatement {
+	s := &ast.BlockStatement{
+		Token:      p.curToken,
+		Statements: []ast.Statement{},
+	}
+	p.nextToken() // "{"
+
+	for !p.currentTokenIs(lexer.RSQUERLI) && !p.currentTokenIs(lexer.EOF) {
+		if stmt := p.parseStatement(); stmt != nil {
+			s.Statements = append(s.Statements, stmt)
+		}
+
+		p.nextToken()
+	}
+
+	fmt.Printf("expect current token }. recieved: %+v", p.curToken)
+
+	return s
+}
+
+func (p *Parser) parseFunctionExpression() ast.Expression {
+	funcLiteral := p.currentTokenIs(lexer.FUNC)
+	exp := &ast.FunctionExpression{Token: p.curToken}
+	if funcLiteral { // i.e "function"
+		p.nextToken()
+	}
+
+	p.nextToken()
+
+	exp.Parameters = p.parseFunctionParameters()
+
+	if !funcLiteral && !p.expectPeek(lexer.FUNCARROW) {
+		return nil
+	}
+	if !p.expectPeek(lexer.LSQUERLI) {
+		return nil
+	}
+
+	exp.Block = p.parseBlockStatement()
+
+	return exp
+}
+
+func (p *Parser) parseFunctionParameters() []*ast.Identifier {
+	identfiers := []*ast.Identifier{}
+	if p.peekTokenIs(lexer.RPARANC) {
+		p.nextToken()
+		return identfiers
+	}
+
+	ident := &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
+	identfiers = append(identfiers, ident)
+
+	for p.peekTokenIs(lexer.COMMA) {
+		p.nextToken()
+		p.nextToken()
+		ident = &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
+		identfiers = append(identfiers, ident)
+	}
+
+	if !p.expectPeek(lexer.RPARANC) {
+		return nil
+	}
+
+	return identfiers
+
+}
 
 func (p *Parser) ParseProgram() *ast.Program {
 	program := ast.NewProgramAST()

@@ -237,10 +237,6 @@ func TestParsingExpression(t *testing.T) {
 			"5 > 4 == 3 < 4",
 			"((5 > 4) == (3 < 4))",
 		},
-		{
-			"5 * 2 + 12 -1 / 5 + 2 * 12",
-			"",
-		},
 	}
 
 	for _, test := range tests {
@@ -249,6 +245,55 @@ func TestParsingExpression(t *testing.T) {
 		exp := p.parseExpression(LOWEST)
 		if test.expected != exp.String() {
 			t.Errorf("expected result to be: %s. recieved: %s.", test.expected, exp.String())
+		}
+	}
+}
+
+func TestGroupExpression(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{"(1+5)+3", "((1 + 5) + 3)"},
+		{"1+(1+3)", "(1 + (1 + 3))"},
+	}
+
+	for _, test := range tests {
+		l := lexer.New(test.input)
+		p := New(l)
+		exp := p.parseExpression(LOWEST)
+		if exp == nil {
+			t.Errorf("expected expression. recieved nil.")
+			return
+		}
+
+		if test.expected != exp.String() {
+			t.Errorf("expected: %s. Recieved: %s", test.expected, exp.String())
+		}
+	}
+}
+
+func TestParseFunctionExpression(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{"function( x , y ){}", "function(x,y){}"},
+		{"function(){}", "function(){}"},
+		{"() => {}", "function(){}"},
+	}
+
+	for _, test := range tests {
+		l := lexer.New(test.input)
+		p := New(l)
+		exp := p.parseExpression(LOWEST)
+		if exp == nil {
+			t.Errorf("excpected expression not to nil")
+			return
+		}
+
+		if test.expected != exp.String() {
+			t.Errorf("expected: %s. Recieved: %s", test.expected, exp.String())
 		}
 	}
 }

@@ -2,6 +2,8 @@ package ast
 
 import (
 	"bytes"
+	"strings"
+
 	"github.com/tarek-elmasri/compiler/lexer"
 )
 
@@ -35,6 +37,118 @@ type InfixExpression struct {
 
 type Program struct {
 	Statements []Statement
+}
+
+// function abc {}
+type FunctionDeclaration struct {
+	Token      lexer.Token
+	Identifier *Identifier
+	Parameters []*Identifier
+	Block      *BlockStatement
+}
+
+// const bb = () => {}
+// const dd = function(){}
+type FunctionExpression struct {
+	Token      lexer.Token // "function" or "("
+	Parameters []*Identifier
+	Block      *BlockStatement
+}
+
+// const cc = bb()
+// add(as)
+// (function(){})()
+// (()=>{})()
+type CallExpression struct {
+	Token     lexer.Token
+	Func      Expression // FunctionExpression or Identifier
+	Arguments []Expression
+}
+
+type BlockStatement struct {
+	Token      lexer.Token
+	Statements []Statement
+}
+
+func (bs *BlockStatement) TokenLiteral() string {
+	return bs.Token.Literal
+}
+
+func (bs *BlockStatement) statementNode() {}
+func (bs *BlockStatement) String() string {
+	out := bytes.Buffer{}
+	out.WriteString(bs.TokenLiteral())
+	for _, stat := range bs.Statements {
+		out.WriteString(stat.String())
+		out.WriteString("}")
+	}
+	return out.String()
+}
+
+func (fd *FunctionDeclaration) TokenLiteral() string {
+	return fd.Token.Literal
+}
+
+func (fd *FunctionDeclaration) statementNode() {}
+func (fd *FunctionDeclaration) String() string {
+	out := bytes.Buffer{}
+	out.WriteString(fd.TokenLiteral())
+	out.WriteString(" ")
+	out.WriteString(fd.Identifier.String())
+	out.WriteString("(")
+	parametersStr := []string{}
+	for _, p := range fd.Parameters {
+		parametersStr = append(parametersStr, p.String())
+	}
+	out.WriteString(strings.Join(parametersStr, ","))
+	out.WriteString("){")
+	for _, statement := range fd.Block.Statements {
+		out.WriteString(statement.String())
+	}
+	out.WriteString("}")
+	return out.String()
+}
+
+func (fe *FunctionExpression) TokenLiteral() string {
+	return fe.Token.Literal
+}
+
+func (fe *FunctionExpression) expressionNode() {}
+func (fe *FunctionExpression) String() string {
+	out := bytes.Buffer{}
+	out.WriteString(fe.TokenLiteral()) // "function" or "("
+	if fe.Token.TokenType == lexer.FUNC {
+		out.WriteString("(")
+	}
+	parametersStr := []string{}
+	for _, p := range fe.Parameters {
+		parametersStr = append(parametersStr, p.String())
+	}
+	out.WriteString(strings.Join(parametersStr, ","))
+	out.WriteString("){")
+	for _, statement := range fe.Block.Statements {
+		out.WriteString(statement.String())
+	}
+	out.WriteString("}")
+	return out.String()
+}
+
+func (ce *CallExpression) TokenLiteral() string {
+	return ce.Token.Literal
+}
+
+func (ce *CallExpression) expressionNode() {}
+func (ce *CallExpression) String() string {
+	out := bytes.Buffer{}
+	out.WriteString(ce.Func.String())
+	out.WriteString("(")
+	argsStr := []string{}
+	for _, arg := range ce.Arguments {
+		argsStr = append(argsStr, arg.String())
+	}
+	out.WriteString(strings.Join(argsStr, ","))
+	out.WriteString(")")
+	return out.String()
 }
 
 func (p *Program) TokenLiteral() string {

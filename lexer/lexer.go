@@ -2,6 +2,7 @@ package lexer
 
 import (
 	"log/slog"
+	"unicode"
 )
 
 type TokenType string
@@ -33,6 +34,7 @@ const (
 	RSQUERLI           = "}"
 	LSQUERLI           = "{"
 	LPARANC            = "("
+	FUNCLPARANC        = "function("
 	ARROWFUNCLPARANC   = "("
 	RPARANC            = ")"
 	STRING             = "STRING"
@@ -131,7 +133,7 @@ func (l *Lexer) NextToken() Token {
 	case '}':
 		tok = newToken(RSQUERLI, "}", l.currentLine, l.inlinePosition)
 	case '(':
-		tok = newToken(LPARANC, "(", l.currentLine, l.inlinePosition)
+		tok = l.readLPARANCES()
 	case ')':
 		tok = newToken(RPARANC, ")", l.currentLine, l.inlinePosition)
 	case ',':
@@ -239,6 +241,10 @@ func (l *Lexer) skipWhitespace() {
 	for l.ch == ' ' || l.ch == '\n' || l.ch == '\r' || l.ch == '\t' {
 		l.readChar()
 	}
+}
+
+func (l *Lexer) isWhiteSpace(ch byte) bool {
+	return unicode.IsSpace(rune(ch))
 }
 
 func isLetter(ch byte) bool {
@@ -381,7 +387,7 @@ func (l *Lexer) isFunctionParenthesis() bool {
 	// move to first letter
 	p := l.position + n + 1
 	for p < len(l.source) {
-		if l.source[p] != ' ' {
+		if !l.isWhiteSpace(l.source[p]) {
 			break
 		}
 		p++
@@ -391,6 +397,15 @@ func (l *Lexer) isFunctionParenthesis() bool {
 		return false
 	}
 	return l.source[p] == '=' && l.source[p+1] == '>'
+}
+
+// Differentiate between arrow funcs and regular parances
+func (l *Lexer) readLPARANCES() Token {
+	if l.isFunctionParenthesis() {
+		return newToken(FUNCLPARANC, "function(", l.currentLine, l.inlinePosition)
+	} else {
+		return newToken(LPARANC, "(", l.currentLine, l.inlinePosition)
+	}
 }
 
 // TODO:

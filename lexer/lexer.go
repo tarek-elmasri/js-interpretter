@@ -43,6 +43,7 @@ const (
 	FLOAT              = "FLOAT"
 	FUNC               = "FUNC"
 	IF                 = "IF"
+	ELSE               = "ELSE"
 	SWITCH             = "SWITCH"
 	CASE               = "CASE"
 	RETURN             = "RETURN"
@@ -64,6 +65,7 @@ const (
 var keywordMap map[string]TokenType = map[string]TokenType{
 	"function": FUNC,
 	"if":       IF,
+	"else":     ELSE,
 	"return":   RETURN,
 	"import":   IMPORT,
 	"const":    CONST,

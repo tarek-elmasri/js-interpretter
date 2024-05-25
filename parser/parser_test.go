@@ -297,3 +297,27 @@ func TestParseFunctionExpression(t *testing.T) {
 		}
 	}
 }
+
+func TestParseIfExpression(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{"if (a > 5){}", "if(a > 5){}"},
+		{"if (a > 5){}else{}", "if(a > 5){}else{}"},
+	}
+
+	for _, test := range tests {
+		l := lexer.New(test.input)
+		p := New(l)
+		exp := p.parseExpression(LOWEST)
+		if exp == nil {
+			t.Errorf("excpected expression not to nil")
+			return
+		}
+
+		if test.expected != exp.String() {
+			t.Errorf("expected: %s. Recieved: %s", test.expected, exp.String())
+		}
+	}
+}

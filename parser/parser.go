@@ -57,6 +57,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefixFunc(lexer.LPARANC, p.parseGroupExpression)
 	p.registerPrefixFunc(lexer.FUNC, p.parseFunctionExpression)
 	p.registerPrefixFunc(lexer.FUNCLPARANC, p.parseFunctionExpression)
+	p.registerPrefixFunc(lexer.IF, p.parseIfExpression)
 	// infix operations
 	p.registerInfixFunc(lexer.EQUAL, p.parseInfixExpression)
 	p.registerInfixFunc(lexer.NOTEQUAL, p.parseInfixExpression)
@@ -88,6 +89,49 @@ func (p *Parser) nextToken() {
 
 func (p *Parser) Errors() []string { return p.errors }
 
+func (p *Parser) parseIfExpression() ast.Expression {
+	exp := &ast.IfExpression{Token: p.curToken}
+
+	if !p.expectPeek(lexer.LPARANC) {
+		return nil
+	}
+
+	p.nextToken()
+
+	exp.Condition = p.parseExpression(LOWEST)
+	if exp.Condition == nil {
+		return nil
+	}
+
+	if !p.expectPeek(lexer.RPARANC) {
+		return nil
+	}
+
+	if !p.expectPeek(lexer.LSQUERLI) {
+		return nil
+	}
+
+	exp.Consequences = p.parseBlockStatement()
+	if exp.Consequences == nil {
+		return nil
+	}
+
+	if !p.expectPeek(lexer.ELSE) {
+		return exp
+	}
+
+	if !p.expectPeek(lexer.LSQUERLI) {
+		return nil
+	}
+
+	exp.Alternative = p.parseBlockStatement()
+	if exp.Alternative == nil {
+		return nil
+	}
+
+	return exp
+}
+
 // "(5+2) + 2"
 func (p *Parser) parseGroupExpression() ast.Expression {
 	p.nextToken()
@@ -113,8 +157,6 @@ func (p *Parser) parseBlockStatement() *ast.BlockStatement {
 
 		p.nextToken()
 	}
-
-	fmt.Printf("expect current token }. recieved: %+v", p.curToken)
 
 	return s
 }

@@ -70,6 +70,31 @@ type BlockStatement struct {
 	Statements []Statement
 }
 
+// if (<condition>) {<block>} else {<block>}
+type IfExpression struct {
+	Token        lexer.Token
+	Condition    Expression
+	Consequences *BlockStatement
+	Alternative  *BlockStatement
+}
+
+func (ie *IfExpression) TokenLiteral() string {
+	return ie.Token.Literal
+}
+
+func (ie *IfExpression) expressionNode() {}
+func (ie *IfExpression) String() string {
+	out := bytes.Buffer{}
+	out.WriteString(ie.TokenLiteral())
+	out.WriteString(ie.Condition.String())
+	out.WriteString(ie.Consequences.String())
+	if ie.Alternative != nil {
+		out.WriteString("else")
+		out.WriteString(ie.Alternative.String())
+	}
+	return out.String()
+}
+
 func (bs *BlockStatement) TokenLiteral() string {
 	return bs.Token.Literal
 }
@@ -80,8 +105,8 @@ func (bs *BlockStatement) String() string {
 	out.WriteString(bs.TokenLiteral())
 	for _, stat := range bs.Statements {
 		out.WriteString(stat.String())
-		out.WriteString("}")
 	}
+	out.WriteString("}")
 	return out.String()
 }
 

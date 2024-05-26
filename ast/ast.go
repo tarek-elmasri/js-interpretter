@@ -57,7 +57,7 @@ type FunctionExpression struct {
 
 type AsyncFunctionExpression struct {
 	Token lexer.Token
-	Func  *FunctionExpression
+	Func  Expression
 }
 
 // const cc = bb()

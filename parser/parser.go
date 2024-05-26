@@ -41,6 +41,7 @@ var precedenceMap = map[lexer.TokenType]int{
 	lexer.MINUS:       SUM,
 	lexer.ASTROUS:     PRODUCT,
 	lexer.DIVIDE:      PRODUCT,
+	lexer.LPARANC:     FUNC,
 }
 
 func New(l *lexer.Lexer) *Parser {
@@ -69,6 +70,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfixFunc(lexer.MINUS, p.parseInfixExpression)
 	p.registerInfixFunc(lexer.ASTROUS, p.parseInfixExpression)
 	p.registerInfixFunc(lexer.DIVIDE, p.parseInfixExpression)
+	p.registerInfixFunc(lexer.LPARANC, p.parseInfixCallExpression)
 
 	// assigning cur and peek tokens
 	p.nextToken()
@@ -114,11 +116,44 @@ func (p *Parser) parseGroupExpressionOrArrowFunc() ast.Expression {
 	return exp
 }
 
-// FIX:
 func (p *Parser) parseAsyncFuncExpression() ast.Expression {
-	_ = &ast.AsyncFunctionExpression{Token: p.curToken}
+	exp := &ast.AsyncFunctionExpression{Token: p.curToken}
+	p.nextToken()
+	exp.Func = p.parseExpression(LOWEST)
+	if exp.Func == nil {
+		return nil
+	}
 
-	return nil
+	return exp
+}
+
+func (p *Parser) parseInfixCallExpression(fn ast.Expression) ast.Expression {
+	exp := &ast.CallExpression{Token: p.curToken, Func: fn}
+	exp.Arguments = p.parseCallArguments()
+	return exp
+}
+
+func (p *Parser) parseCallArguments() []ast.Expression {
+	args := []ast.Expression{}
+	p.nextToken()
+
+	if p.currentTokenIs(lexer.RPARANC) {
+		return args
+	}
+
+	args = append(args, p.parseExpression(LOWEST))
+
+	for p.peekTokenIs(lexer.COMMA) {
+		p.nextToken()
+		p.nextToken()
+		args = append(args, p.parseExpression(LOWEST))
+	}
+
+	if !p.expectPeek(lexer.RPARANC) {
+		return nil
+	}
+
+	return args
 }
 
 func (p *Parser) parseIfExpression() ast.Expression {

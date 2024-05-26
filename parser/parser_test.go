@@ -280,7 +280,69 @@ func TestParseFunctionExpression(t *testing.T) {
 	}{
 		{"function( x , y ){}", "function(x,y){}"},
 		{"function(){}", "function(){}"},
+		{"(function(){})", "function(){}"},
 		{"() => {}", "function(){}"},
+		{"(()=>{})=> {}", "function(function(){}){}"},
+		{"(()=>{}, abc)=> {}", "function(function(){},abc){}"},
+		{"(a+b)=>{}", "function((a + b)){}"},
+		{"((a+b), y)=>{}", "function((a + b),y){}"},
+	}
+
+	for _, test := range tests {
+		l := lexer.New(test.input)
+		p := New(l)
+		exp := p.parseExpression(LOWEST)
+		if exp == nil {
+			t.Errorf("excpected expression not to nil")
+			return
+		}
+
+		if test.expected != exp.String() {
+			t.Errorf("expected: %s. Recieved: %s", test.expected, exp.String())
+		}
+	}
+}
+
+func TestParseAsyncFunctionExpression(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{"async function( x , y ){}", "async function(x,y){}"},
+		{"async function(){}", "async function(){}"},
+		{"async (function(){})", "async function(){}"},
+		{"async () => {}", "async function(){}"},
+		{"async (()=>{})=> {}", "async function(function(){}){}"},
+		{"async (()=>{}, abc)=> {}", "async function(function(){},abc){}"},
+		{"async (a+b)=>{}", "async function((a + b)){}"},
+		{"async ((a+b), y)=>{}", "async function((a + b),y){}"},
+	}
+
+	for _, test := range tests {
+		l := lexer.New(test.input)
+		p := New(l)
+		exp := p.parseExpression(LOWEST)
+		if exp == nil {
+			t.Errorf("excpected expression not to nil")
+			return
+		}
+
+		if test.expected != exp.String() {
+			t.Errorf("expected: %s. Recieved: %s", test.expected, exp.String())
+		}
+	}
+}
+
+func TestParseCallExpression(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{"async function( x , y ){}()", "async function(x,y){}()"},
+		{"function(){}()", "function(){}()"},
+		{"a(function(){})", "a(function(){})"},
+		{"a(() => {})()", "a(function(){})()"},
+		{"(a,b)=>{}(a,b)", "function(a,b){}(a,b)"},
 	}
 
 	for _, test := range tests {

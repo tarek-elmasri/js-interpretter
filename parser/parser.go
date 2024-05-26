@@ -390,6 +390,10 @@ func (p *Parser) parseExpression(precedence int) ast.Expression {
 		leftExpression = infix(leftExpression)
 	}
 
+	if p.peekTokenIs(lexer.SEMICOLON) {
+		p.nextToken()
+	}
+
 	return leftExpression
 }
 
@@ -414,7 +418,6 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 		Value: p.curToken.Literal,
 	}
 
-	fmt.Printf("expect peek to be assign. recieved %+v", p.peekToken)
 	if !p.expectPeek(lexer.ASSIGN) {
 		return nil
 	}
@@ -485,3 +488,7 @@ func (p *Parser) peekTokenPrecedence() int {
 	}
 	return LOWEST
 }
+
+// TODO:
+// for loops
+// switch statements

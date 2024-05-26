@@ -8,6 +8,6 @@ import (
 
 func main() {
 
-	r := repl.New(os.Stdin)
+	r := repl.New(os.Stdin, os.Stdout)
 	r.Start()
 }

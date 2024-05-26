@@ -13,6 +13,81 @@ func checkForErrors(t *testing.T, p *Parser) {
 	}
 }
 
+func TestParseLetStatement(t *testing.T) {
+	l := lexer.New("let a = 12")
+	p := New(l)
+	program := p.ParseProgram()
+	checkForErrors(t, p)
+
+	tests := struct {
+		tl    string
+		name  string
+		value int64
+	}{"let", "a", 12}
+
+	if len(program.Statements) != 1 {
+		t.Errorf("expected statemenst length to be 1, recieved %d", len(program.Statements))
+	}
+
+	stmt, ok := program.Statements[0].(*ast.LetStatement)
+	if !ok {
+		t.Errorf("expected statemenst type of LetStatement. recieved: %T", program.Statements[0])
+	}
+
+	if tests.tl != stmt.TokenLiteral() {
+		t.Errorf("expected TokenLiteral to be %s. recieved: %s", tests.tl, stmt.TokenLiteral())
+	}
+
+	if stmt.Name.String() != tests.name {
+		t.Errorf("expected statemenst identifier to be %s. recieved: %s", tests.name, stmt.Name.String())
+	}
+
+	intLet, ok := stmt.Value.(*ast.IntLiteralExpression)
+	if !ok {
+		t.Errorf("expected statemenst type of IntLiteralExpression. recieved: %T", stmt.Value)
+	}
+
+	if intLet.Value != tests.value {
+		t.Errorf("expected value to be %d. recieved: %d", tests.value, intLet.Value)
+	}
+
+}
+
+func TestParseReturnStatement(t *testing.T) {
+	l := lexer.New("return 15;")
+	p := New(l)
+	program := p.ParseProgram()
+	checkForErrors(t, p)
+
+	tests := struct {
+		tl    string
+		value int64
+	}{"return", 15}
+
+	if len(program.Statements) != 1 {
+		t.Errorf("expected statemenst length to be 1, recieved %d", len(program.Statements))
+	}
+
+	stmt, ok := program.Statements[0].(*ast.ReturnStatement)
+	if !ok {
+		t.Errorf("expected statemenst type of ReturnStatement. recieved: %T", program.Statements[0])
+	}
+
+	if tests.tl != stmt.TokenLiteral() {
+		t.Errorf("expected TokenLiteral to be %s. recieved: %s", tests.tl, stmt.TokenLiteral())
+	}
+
+	intLet, ok := stmt.ReturnValue.(*ast.IntLiteralExpression)
+	if !ok {
+		t.Errorf("expected statemenst type of IntLiteralExpression. recieved: %T", stmt.ReturnValue)
+	}
+
+	if intLet.Value != tests.value {
+		t.Errorf("expected value to be %d. recieved: %d", tests.value, intLet.Value)
+	}
+
+}
+
 func TestIntLiteralExpression(t *testing.T) {
 	l := lexer.New("55\r\n")
 	p := New(l)

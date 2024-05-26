@@ -397,8 +397,8 @@ func (p *Parser) parseIdentifier() ast.Expression {
 	return &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
 }
 
-func (p *Parser) addUnexpectedTokenError() {
-	p.errors = append(p.errors, fmt.Sprintf("line: %d:%d - unexpected %s.", p.peekToken.LineNumber, p.peekToken.PositionNumber, p.peekToken.Literal))
+func (p *Parser) addUnexpectedTokenError(exp lexer.TokenType) {
+	p.errors = append(p.errors, fmt.Sprintf("line: %d:%d - expected token to be %s, recieved: %s", p.peekToken.LineNumber, p.peekToken.PositionNumber, exp, p.peekToken.TokenType))
 }
 
 func (p *Parser) parseLetStatement() *ast.LetStatement {
@@ -406,7 +406,6 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 	stmt := &ast.LetStatement{Token: p.curToken}
 
 	if !p.expectPeek(lexer.IDENT) {
-		p.addUnexpectedTokenError()
 		return nil
 	}
 
@@ -415,12 +414,16 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 		Value: p.curToken.Literal,
 	}
 
+	fmt.Printf("expect peek to be assign. recieved %+v", p.peekToken)
 	if !p.expectPeek(lexer.ASSIGN) {
-		p.addUnexpectedTokenError()
 		return nil
 	}
+	p.nextToken()
 
-	// TODO: read expression value
+	stmt.Value = p.parseExpression(LOWEST)
+	if p.peekTokenIs(lexer.SEMICOLON) {
+		p.nextToken()
+	}
 
 	return stmt
 }
@@ -439,6 +442,7 @@ func (p *Parser) expectPeek(tt lexer.TokenType) bool {
 		p.nextToken()
 		return true
 	} else {
+		p.addUnexpectedTokenError(tt)
 		return false
 	}
 }
@@ -447,7 +451,12 @@ func (p *Parser) parseReturnStatement() *ast.ReturnStatement {
 	stmt := &ast.ReturnStatement{Token: p.curToken}
 
 	p.nextToken()
-	// TODO: read return value
+	stmt.ReturnValue = p.parseExpression(LOWEST)
+
+	if p.peekTokenIs(lexer.SEMICOLON) {
+		p.nextToken()
+	}
+
 	return stmt
 }
 

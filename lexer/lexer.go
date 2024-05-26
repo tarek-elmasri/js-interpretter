@@ -34,8 +34,6 @@ const (
 	RSQUERLI           = "}"
 	LSQUERLI           = "{"
 	LPARANC            = "("
-	FUNCLPARANC        = "function("
-	ARROWFUNCLPARANC   = "("
 	RPARANC            = ")"
 	STRING             = "STRING"
 	INTERPOLATEDSTRING = "INTERPOLATEDSTRING"
@@ -95,6 +93,13 @@ type Lexer struct {
 	readPosition   int
 	currentLine    int
 	inlinePosition int
+	record         struct {
+		position       int
+		readPosition   int
+		currentLine    int
+		inlinePosition int
+		ch             byte
+	}
 	// filename     string
 }
 
@@ -135,7 +140,7 @@ func (l *Lexer) NextToken() Token {
 	case '}':
 		tok = newToken(RSQUERLI, "}", l.currentLine, l.inlinePosition)
 	case '(':
-		tok = l.readLPARANCES()
+		tok = newToken(LPARANC, "(", l.currentLine, l.inlinePosition)
 	case ')':
 		tok = newToken(RPARANC, ")", l.currentLine, l.inlinePosition)
 	case ',':
@@ -378,37 +383,22 @@ func (l *Lexer) readLowerThan() Token {
 	}
 }
 
-// Checks if the upcoming token should be an anonymous function
-func (l *Lexer) isFunctionParenthesis() bool {
-	// position of closed parethensis
-	n := l.peekFor(')')
-	if n == 0 {
-		return false
-	}
-
-	// move to first letter
-	p := l.position + n + 1
-	for p < len(l.source) {
-		if !l.isWhiteSpace(l.source[p]) {
-			break
-		}
-		p++
-	}
-
-	if p+1 >= len(l.source) {
-		return false
-	}
-	return l.source[p] == '=' && l.source[p+1] == '>'
+func (l *Lexer) Record() {
+	l.record.position = l.position
+	l.record.inlinePosition = l.inlinePosition
+	l.record.currentLine = l.currentLine
 }
 
-// Differentiate between arrow funcs and regular parances
-func (l *Lexer) readLPARANCES() Token {
-	if l.isFunctionParenthesis() {
-		return newToken(FUNCLPARANC, "function(", l.currentLine, l.inlinePosition)
-	} else {
-		return newToken(LPARANC, "(", l.currentLine, l.inlinePosition)
-	}
+func (l *Lexer) Recover() {
+	l.position = l.record.position
+	l.currentLine = l.record.currentLine
+	l.inlinePosition = l.record.inlinePosition
+	l.readPosition = l.position + 1
+	l.ch = l.source[l.position]
 }
+
+func (l *Lexer) GetCh() byte      { return l.ch }
+func (l *Lexer) GetPosition() int { return l.position }
 
 // TODO:
 // ++ / --

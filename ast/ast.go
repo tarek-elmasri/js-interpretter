@@ -51,8 +51,13 @@ type FunctionDeclaration struct {
 // const dd = function(){}
 type FunctionExpression struct {
 	Token      lexer.Token // "function" or "("
-	Parameters []*Identifier
+	Parameters []Expression
 	Block      *BlockStatement
+}
+
+type AsyncFunctionExpression struct {
+	Token lexer.Token
+	Func  *FunctionExpression
 }
 
 // const cc = bb()
@@ -76,6 +81,19 @@ type IfExpression struct {
 	Condition    Expression
 	Consequences *BlockStatement
 	Alternative  *BlockStatement
+}
+
+func (ase *AsyncFunctionExpression) TokenLiteral() string {
+	return ase.Token.Literal
+}
+
+func (ase *AsyncFunctionExpression) expressionNode() {}
+func (ase *AsyncFunctionExpression) String() string {
+	out := bytes.Buffer{}
+	out.WriteString(ase.TokenLiteral())
+	out.WriteString(" ")
+	out.WriteString(ase.Func.String())
+	return out.String()
 }
 
 func (ie *IfExpression) TokenLiteral() string {
@@ -141,10 +159,12 @@ func (fe *FunctionExpression) TokenLiteral() string {
 func (fe *FunctionExpression) expressionNode() {}
 func (fe *FunctionExpression) String() string {
 	out := bytes.Buffer{}
-	out.WriteString(fe.TokenLiteral()) // "function" or "("
-	if fe.Token.TokenType == lexer.FUNC {
-		out.WriteString("(")
+	if fe.TokenLiteral() != "function" {
+		out.WriteString("function")
+	} else {
+		out.WriteString(fe.TokenLiteral()) // "function"
 	}
+	out.WriteString("(")
 	parametersStr := []string{}
 	for _, p := range fe.Parameters {
 		parametersStr = append(parametersStr, p.String())

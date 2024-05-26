@@ -19,12 +19,14 @@ const (
 )
 
 type Parser struct {
-	lexer     *lexer.Lexer
-	curToken  lexer.Token
-	peekToken lexer.Token
-	prefixFns map[lexer.TokenType]prefixFn
-	infixFns  map[lexer.TokenType]infixFn
-	errors    []string
+	lexer           *lexer.Lexer
+	curToken        lexer.Token
+	peekToken       lexer.Token
+	recordedTok     lexer.Token
+	recordedPeekTok lexer.Token
+	prefixFns       map[lexer.TokenType]prefixFn
+	infixFns        map[lexer.TokenType]infixFn
+	errors          []string
 }
 
 type prefixFn = func() ast.Expression
@@ -54,10 +56,10 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefixFunc(lexer.INT, p.parseIntLiteral)
 	p.registerPrefixFunc(lexer.NOT, p.parsePrefixExpression)
 	p.registerPrefixFunc(lexer.MINUS, p.parsePrefixExpression)
-	p.registerPrefixFunc(lexer.LPARANC, p.parseGroupExpression)
+	p.registerPrefixFunc(lexer.LPARANC, p.parseGroupExpressionOrArrowFunc)
 	p.registerPrefixFunc(lexer.FUNC, p.parseFunctionExpression)
-	p.registerPrefixFunc(lexer.FUNCLPARANC, p.parseFunctionExpression)
 	p.registerPrefixFunc(lexer.IF, p.parseIfExpression)
+	p.registerPrefixFunc(lexer.ASYNC, p.parseAsyncFuncExpression)
 	// infix operations
 	p.registerInfixFunc(lexer.EQUAL, p.parseInfixExpression)
 	p.registerInfixFunc(lexer.NOTEQUAL, p.parseInfixExpression)
@@ -87,7 +89,37 @@ func (p *Parser) nextToken() {
 	p.peekToken = p.lexer.NextToken()
 }
 
+func (p *Parser) record() {
+	p.recordedTok = p.curToken
+	p.recordedPeekTok = p.peekToken
+	p.lexer.Record()
+}
+
+func (p *Parser) recover() {
+	p.lexer.Recover()
+	p.curToken = p.recordedTok
+	p.peekToken = p.recordedPeekTok
+}
+
 func (p *Parser) Errors() []string { return p.errors }
+
+func (p *Parser) parseGroupExpressionOrArrowFunc() ast.Expression {
+	p.record()
+	exp := p.parseArrowFunc()
+	if exp == nil {
+		p.recover()
+		return p.parseGroupExpression()
+	}
+
+	return exp
+}
+
+// FIX:
+func (p *Parser) parseAsyncFuncExpression() ast.Expression {
+	_ = &ast.AsyncFunctionExpression{Token: p.curToken}
+
+	return nil
+}
 
 func (p *Parser) parseIfExpression() ast.Expression {
 	exp := &ast.IfExpression{Token: p.curToken}
@@ -161,51 +193,91 @@ func (p *Parser) parseBlockStatement() *ast.BlockStatement {
 	return s
 }
 
-func (p *Parser) parseFunctionExpression() ast.Expression {
-	funcLiteral := p.currentTokenIs(lexer.FUNC)
+// avoid adding errors as it might be just a try to read
+// an arrow func expression before trying to parse group expression
+// unless reached the arrow token
+func (p *Parser) parseArrowFunc() ast.Expression {
 	exp := &ast.FunctionExpression{Token: p.curToken}
-	if funcLiteral { // i.e "function"
-		p.nextToken()
+	p.nextToken()
+	exp.Parameters = p.parseFunctionParameters()
+	if exp.Parameters == nil {
+		return nil
+	}
+
+	if !p.peekTokenIs(lexer.FUNCARROW) {
+		return nil
 	}
 
 	p.nextToken()
 
-	exp.Parameters = p.parseFunctionParameters()
-
-	if !funcLiteral && !p.expectPeek(lexer.FUNCARROW) {
-		return nil
-	}
 	if !p.expectPeek(lexer.LSQUERLI) {
 		return nil
 	}
 
 	exp.Block = p.parseBlockStatement()
+	if exp.Block == nil {
+		return nil
+	}
 
 	return exp
 }
 
-func (p *Parser) parseFunctionParameters() []*ast.Identifier {
-	identfiers := []*ast.Identifier{}
-	if p.peekTokenIs(lexer.RPARANC) {
-		p.nextToken()
-		return identfiers
+func (p *Parser) parseFunctionExpression() ast.Expression {
+	exp := &ast.FunctionExpression{Token: p.curToken}
+
+	if !p.expectPeek(lexer.LPARANC) {
+		return nil
 	}
 
-	ident := &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
-	identfiers = append(identfiers, ident)
+	p.nextToken() // passing LPARANC
+
+	exp.Parameters = p.parseFunctionParameters()
+	if exp.Parameters == nil {
+		return nil
+	}
+
+	if !p.expectPeek(lexer.LSQUERLI) {
+		return nil
+	}
+
+	exp.Block = p.parseBlockStatement()
+	if exp.Block == nil {
+		return nil
+	}
+
+	return exp
+}
+
+// avoid adding errors as it might be just a try to read
+// an arrow func expression before trying to parse group expression
+func (p *Parser) parseFunctionParameters() []ast.Expression {
+	exps := []ast.Expression{}
+	if p.currentTokenIs(lexer.RPARANC) {
+		return exps
+	}
+	exp := p.parseExpression(LOWEST)
+	if exp == nil {
+		return nil
+	}
+	exps = append(exps, exp)
 
 	for p.peekTokenIs(lexer.COMMA) {
 		p.nextToken()
 		p.nextToken()
-		ident = &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
-		identfiers = append(identfiers, ident)
+		exp = p.parseExpression(LOWEST)
+		if exp == nil {
+			return nil
+		}
+		exps = append(exps, exp)
 	}
 
-	if !p.expectPeek(lexer.RPARANC) {
+	if !p.peekTokenIs(lexer.RPARANC) {
 		return nil
 	}
 
-	return identfiers
+	p.nextToken()
+
+	return exps
 
 }
 

@@ -54,6 +54,8 @@ func New(l *lexer.Lexer) *Parser {
 
 	// prefix operations
 	p.registerPrefixFunc(lexer.IDENT, p.parseIdentifier)
+	p.registerPrefixFunc(lexer.STRING, p.parseString)
+	p.registerPrefixFunc(lexer.INTERPOLATEDSTRING, p.parseInterpolatedString)
 	p.registerPrefixFunc(lexer.INT, p.parseIntLiteral)
 	p.registerPrefixFunc(lexer.NOT, p.parsePrefixExpression)
 	p.registerPrefixFunc(lexer.MINUS, p.parsePrefixExpression)
@@ -194,6 +196,58 @@ func (p *Parser) parseIfExpression() ast.Expression {
 	exp.Alternative = p.parseBlockStatement()
 	if exp.Alternative == nil {
 		return nil
+	}
+
+	return exp
+}
+
+func (p *Parser) parseString() ast.Expression {
+	return &ast.StringExpression{Token: p.curToken, Value: p.curToken.Literal}
+}
+
+func (p *Parser) parseInterpolatedString() ast.Expression {
+	exp := &ast.IntepolatedString{Token: p.curToken}
+
+	str := p.curToken.Literal
+	accStr := ""
+	for i := 0; i < len(str); i++ {
+		if str[i] != '$' {
+			accStr += string(str[i])
+			continue
+		}
+
+		if i+1 < len(str) && str[i+1] == '{' {
+			// first split current string value
+			value := &ast.StringExpression{Token: p.curToken, Value: accStr}
+			exp.Values = append(exp.Values, value)
+			accStr = ""
+			i = i + 2 // passing '${'
+			startPosition := i
+		inner:
+			for j := startPosition; j < len(str); j++ {
+				i = j
+				if str[j] == '}' {
+					evalExp := str[startPosition:j]
+					if len(evalExp) == 0 {
+						break inner
+					}
+					l := lexer.New(evalExp)
+					newParser := New(l)
+					newExp := newParser.parseExpression(LOWEST)
+					if newExp != nil {
+						exp.Values = append(exp.Values, newExp)
+					}
+					if len(newParser.Errors()) != 0 {
+						p.errors = append(p.errors, newParser.Errors()...)
+					}
+					break inner
+				}
+			}
+		}
+	}
+
+	if len(accStr) != 0 {
+		exp.Values = append(exp.Values, &ast.StringExpression{Token: p.curToken, Value: accStr})
 	}
 
 	return exp

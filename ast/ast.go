@@ -220,6 +220,46 @@ type LetStatement struct {
 	Value Expression
 }
 
+type StringExpression struct {
+	Token lexer.Token
+	Value string
+}
+
+type IntepolatedString struct {
+	Token  lexer.Token
+	Values []Expression
+}
+
+func (se *StringExpression) TokenLiteral() string {
+	return se.Token.Literal
+}
+
+func (se *StringExpression) expressionNode() {}
+
+func (se *StringExpression) String() string {
+	out := bytes.Buffer{}
+	out.WriteString("\"")
+	out.WriteString(se.Value)
+	out.WriteString("\"")
+	return out.String()
+}
+
+func (is *IntepolatedString) TokenLiteral() string {
+	return is.Token.Literal
+}
+
+func (is *IntepolatedString) expressionNode() {}
+
+func (is *IntepolatedString) String() string {
+	out := bytes.Buffer{}
+	out.WriteString("`")
+	for _, exp := range is.Values {
+		out.WriteString(exp.String())
+	}
+	out.WriteString("`")
+	return out.String()
+}
+
 func (ls *LetStatement) statementNode() {}
 func (ls *LetStatement) TokenLiteral() string {
 	return ls.Token.Literal

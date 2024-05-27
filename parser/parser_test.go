@@ -458,3 +458,53 @@ func TestParseIfExpression(t *testing.T) {
 		}
 	}
 }
+
+func TestParseInterpolatedString(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{"`hello world`", "`\"hello world\"`"},
+		{"`hello ${world}", "`\"hello \"world`"},
+	}
+
+	for _, test := range tests {
+		l := lexer.New(test.input)
+		p := New(l)
+		exp := p.parseExpression(LOWEST)
+		if exp == nil {
+			t.Errorf("excpected expression not to nil")
+			return
+		}
+
+		if test.expected != exp.String() {
+			t.Errorf("expected: %s. Recieved: %s", test.expected, exp.String())
+		}
+	}
+
+}
+
+func TestParseString(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{"\"hello world\"", "\"hello world\""},
+		{"\"hello ${world}\"", "\"hello ${world}\""},
+	}
+
+	for _, test := range tests {
+		l := lexer.New(test.input)
+		p := New(l)
+		exp := p.parseExpression(LOWEST)
+		if exp == nil {
+			t.Errorf("excpected expression not to nil")
+			return
+		}
+
+		if test.expected != exp.String() {
+			t.Errorf("expected: %s. Recieved: %s", test.expected, exp.String())
+		}
+	}
+
+}

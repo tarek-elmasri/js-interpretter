@@ -13,7 +13,7 @@ func checkForErrors(t *testing.T, p *Parser) {
 	}
 }
 
-func TestParseLetStatement(t *testing.T) {
+func TestParseVarDeclarationStatement(t *testing.T) {
 	l := lexer.New("let a = 12")
 	p := New(l)
 	program := p.ParseProgram()
@@ -29,9 +29,9 @@ func TestParseLetStatement(t *testing.T) {
 		t.Errorf("expected statemenst length to be 1, recieved %d", len(program.Statements))
 	}
 
-	stmt, ok := program.Statements[0].(*ast.LetStatement)
+	stmt, ok := program.Statements[0].(*ast.VarDeclarationStatement)
 	if !ok {
-		t.Errorf("expected statemenst type of LetStatement. recieved: %T", program.Statements[0])
+		t.Errorf("expected statemenst type of VarDeclarationStatement. recieved: %T", program.Statements[0])
 	}
 
 	if tests.tl != stmt.TokenLiteral() {
@@ -49,6 +49,78 @@ func TestParseLetStatement(t *testing.T) {
 
 	if intLet.Value != tests.value {
 		t.Errorf("expected value to be %d. recieved: %d", tests.value, intLet.Value)
+	}
+
+	test := []struct {
+		input    string
+		expected string
+	}{
+		{"let a;", "let a"},
+		{"let a=1", "let a=1"},
+		{"var c;", "var c"},
+		{"var c=1;", "var c=1"},
+	}
+
+	for _, ts := range test {
+		l = lexer.New(ts.input)
+		p := New(l)
+		stmt := p.parseVarDeclarationStatement()
+		if stmt == nil {
+			t.Errorf("expected stmt not to be nil")
+			return
+		}
+
+		if stmt.String() != ts.expected {
+			t.Errorf("expected statement to be %s. recieved: %s", ts.expected, stmt.String())
+		}
+	}
+}
+
+func TestIdentifierAssignStatement(t *testing.T) {
+
+	test := []struct {
+		input    string
+		expected string
+	}{
+		{"a=12", "a=12"},
+		{" c=1;", "c=1"},
+	}
+
+	for _, ts := range test {
+		l := lexer.New(ts.input)
+		p := New(l)
+		stmt := p.parseIdentifierAssignStatement()
+		if stmt == nil {
+			t.Errorf("expected stmt not to be nil")
+			return
+		}
+
+		if stmt.String() != ts.expected {
+			t.Errorf("expected statement to be %s. recieved: %s", ts.expected, stmt.String())
+		}
+	}
+}
+
+func TestParseConstStatement(t *testing.T) {
+	test := []struct {
+		input    string
+		expected string
+	}{
+		{"const a=1;", "const a=1"},
+	}
+
+	for _, ts := range test {
+		l := lexer.New(ts.input)
+		p := New(l)
+		stmt := p.parseConstStatement()
+		if stmt == nil {
+			t.Errorf("expected stmt not to be nil")
+			return
+		}
+
+		if stmt.String() != ts.expected {
+			t.Errorf("expected statement to be %s. recieved: %s", ts.expected, stmt.String())
+		}
 	}
 
 }

@@ -60,6 +60,28 @@ type AsyncFunctionExpression struct {
 	Func  Expression
 }
 
+type IdentifierStatement struct {
+	Token lexer.Token
+	Name  *Identifier
+	Value Expression
+}
+
+func (ids *IdentifierStatement) TokenLiteral() string {
+	return ids.Token.Literal
+}
+func (ids *IdentifierStatement) statementNode() {}
+func (ids *IdentifierStatement) String() string {
+	out := bytes.Buffer{}
+	if ids.TokenLiteral() == "const" || ids.TokenLiteral() == "let" || ids.TokenLiteral() == "let" {
+		out.WriteString(ids.TokenLiteral())
+		out.WriteString(" ")
+	}
+	out.WriteString(ids.Name.String())
+	out.WriteString("=")
+	out.WriteString(ids.Value.String())
+	return out.String()
+}
+
 // const cc = bb()
 // add(as)
 // (function(){})()
@@ -214,7 +236,7 @@ type Identifier struct {
 	Value string
 }
 
-type LetStatement struct {
+type ConstStatement struct {
 	Token lexer.Token
 	Name  *Identifier
 	Value Expression
@@ -228,6 +250,30 @@ type StringExpression struct {
 type IntepolatedString struct {
 	Token  lexer.Token
 	Values []Expression
+}
+
+type VarDeclarationStatement struct {
+	Token lexer.Token
+	Name  *Identifier
+	Value Expression
+}
+
+func (vd *VarDeclarationStatement) TokenLiteral() string {
+	return vd.Token.Literal
+}
+
+func (vd *VarDeclarationStatement) statementNode() {}
+func (vd *VarDeclarationStatement) String() string {
+	out := bytes.NewBuffer([]byte{})
+	out.WriteString(vd.TokenLiteral())
+	out.WriteString(" ")
+	out.WriteString(vd.Name.String())
+	if vd.Value != nil {
+		out.WriteString(lexer.ASSIGN)
+		out.WriteString(vd.Value.String())
+	}
+	return out.String()
+
 }
 
 func (se *StringExpression) TokenLiteral() string {
@@ -260,17 +306,17 @@ func (is *IntepolatedString) String() string {
 	return out.String()
 }
 
-func (ls *LetStatement) statementNode() {}
-func (ls *LetStatement) TokenLiteral() string {
-	return ls.Token.Literal
+func (cs *ConstStatement) statementNode() {}
+func (cs *ConstStatement) TokenLiteral() string {
+	return cs.Token.Literal
 }
-func (ls *LetStatement) String() string {
+func (cs *ConstStatement) String() string {
 	out := bytes.NewBuffer([]byte{})
-	out.WriteString(ls.TokenLiteral())
+	out.WriteString(cs.TokenLiteral())
 	out.WriteString(" ")
-	out.WriteString(ls.Name.String())
+	out.WriteString(cs.Name.String())
 	out.WriteString(lexer.ASSIGN)
-	out.WriteString(ls.Value.String())
+	out.WriteString(cs.Value.String())
 	return out.String()
 }
 
@@ -296,8 +342,10 @@ func (rs *ReturnStatement) statementNode() {}
 func (rs *ReturnStatement) String() string {
 	out := bytes.NewBuffer([]byte{})
 	out.WriteString(rs.TokenLiteral())
-	out.WriteString(" ")
-	out.WriteString(rs.ReturnValue.String())
+	if rs.ReturnValue != nil {
+		out.WriteString(" ")
+		out.WriteString(rs.ReturnValue.String())
+	}
 	return out.String()
 }
 

@@ -386,13 +386,70 @@ func (p *Parser) ParseProgram() *ast.Program {
 
 func (p *Parser) parseStatement() ast.Statement {
 	switch p.curToken.TokenType {
-	case lexer.LET:
-		return p.parseLetStatement()
+	case lexer.CONST:
+		return p.parseConstStatement()
+	case lexer.LET, lexer.VAR:
+		return p.parseVarDeclarationStatement()
 	case lexer.RETURN:
 		return p.parseReturnStatement()
 	default:
+		if p.currentTokenIs(lexer.IDENT) && p.peekTokenIs(lexer.ASSIGN) {
+			return p.parseIdentifierAssignStatement()
+		}
 		return p.parseExpressionStatement()
 	}
+}
+
+// might not having a value
+// for let and var declarations
+func (p *Parser) parseVarDeclarationStatement() ast.Statement {
+	stmt := &ast.VarDeclarationStatement{Token: p.curToken}
+
+	if !p.expectPeek(lexer.IDENT) {
+		return nil
+	}
+
+	stmt.Name = &ast.Identifier{
+		Token: p.curToken,
+		Value: p.curToken.Literal,
+	}
+
+	if p.peekTokenIs(lexer.SEMICOLON) {
+		p.nextToken()
+		return stmt
+	}
+
+	if !p.peekTokenIs(lexer.ASSIGN) {
+		return stmt
+	}
+
+	p.nextToken()
+	p.nextToken()
+
+	stmt.Value = p.parseExpression(LOWEST)
+	if p.peekTokenIs(lexer.SEMICOLON) {
+		p.nextToken()
+	}
+
+	return stmt
+
+}
+
+func (p *Parser) parseIdentifierAssignStatement() ast.Statement {
+	stmt := &ast.IdentifierStatement{Token: p.curToken, Name: &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}}
+
+	if !p.expectPeek(lexer.ASSIGN) {
+		return nil
+	}
+	p.nextToken()
+
+	stmt.Value = p.parseExpression(LOWEST)
+	if p.peekTokenIs(lexer.SEMICOLON) {
+		p.nextToken()
+	}
+
+	return stmt
+
 }
 
 func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
@@ -459,9 +516,9 @@ func (p *Parser) addUnexpectedTokenError(exp lexer.TokenType) {
 	p.errors = append(p.errors, fmt.Sprintf("line: %d:%d - expected token to be %s, recieved: %s", p.peekToken.LineNumber, p.peekToken.PositionNumber, exp, p.peekToken.TokenType))
 }
 
-func (p *Parser) parseLetStatement() *ast.LetStatement {
+func (p *Parser) parseConstStatement() *ast.ConstStatement {
 	// TODO: multi assign statement
-	stmt := &ast.LetStatement{Token: p.curToken}
+	stmt := &ast.ConstStatement{Token: p.curToken}
 
 	if !p.expectPeek(lexer.IDENT) {
 		return nil
@@ -508,6 +565,11 @@ func (p *Parser) parseReturnStatement() *ast.ReturnStatement {
 	stmt := &ast.ReturnStatement{Token: p.curToken}
 
 	p.nextToken()
+	if p.currentTokenIs(lexer.SEMICOLON) || p.currentTokenIs(lexer.RSQUERLI) || p.currentTokenIs(lexer.EOF) {
+		p.nextToken()
+		return stmt
+	}
+
 	stmt.ReturnValue = p.parseExpression(LOWEST)
 
 	if p.peekTokenIs(lexer.SEMICOLON) {

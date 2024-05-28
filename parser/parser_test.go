@@ -655,5 +655,28 @@ func TestObjectExpression(t *testing.T) {
 			t.Errorf("expected: %s. Recieved: %s", test.expected, exp.String())
 		}
 	}
+}
 
+func TestParseFloatLiteralExpression(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{"12.5", "12.5"},
+	}
+
+	for _, test := range tests {
+		l := lexer.New(test.input)
+		p := New(l)
+		exp := p.parseFloatLiteral()
+		checkForErrors(t, p)
+		if exp == nil {
+			t.Errorf("excpected expression not to nil")
+			return
+		}
+
+		if test.expected != exp.String() {
+			t.Errorf("expected: %s. Recieved: %s", test.expected, exp.String())
+		}
+	}
 }

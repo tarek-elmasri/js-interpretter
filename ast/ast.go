@@ -413,6 +413,11 @@ type IntLiteralExpression struct {
 	Value int64
 }
 
+type FloatLiteralExpression struct {
+	Token lexer.Token
+	Value float64
+}
+
 func (es *ExpressionStatement) TokenLiteral() string {
 	return es.Token.Literal
 }
@@ -463,6 +468,16 @@ func (e *IntLiteralExpression) TokenLiteral() string {
 func (e *IntLiteralExpression) expressionNode() {}
 
 func (e *IntLiteralExpression) String() string {
+	return e.TokenLiteral()
+}
+
+func (e *FloatLiteralExpression) TokenLiteral() string {
+	return e.Token.Literal
+}
+
+func (e *FloatLiteralExpression) expressionNode() {}
+
+func (e *FloatLiteralExpression) String() string {
 	return e.TokenLiteral()
 }
 

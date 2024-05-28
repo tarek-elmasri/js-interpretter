@@ -57,6 +57,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefixFunc(lexer.STRING, p.parseString)
 	p.registerPrefixFunc(lexer.INTERPOLATEDSTRING, p.parseInterpolatedString)
 	p.registerPrefixFunc(lexer.INT, p.parseIntLiteral)
+	p.registerPrefixFunc(lexer.FLOAT, p.parseFloatLiteral)
 	p.registerPrefixFunc(lexer.NOT, p.parsePrefixExpression)
 	p.registerPrefixFunc(lexer.MINUS, p.parsePrefixExpression)
 	p.registerPrefixFunc(lexer.LPARANC, p.parseGroupExpressionOrArrowFunc)
@@ -599,6 +600,18 @@ func (p *Parser) parseIntLiteral() ast.Expression {
 	return exp
 }
 
+func (p *Parser) parseFloatLiteral() ast.Expression {
+	exp := &ast.FloatLiteralExpression{Token: p.curToken}
+	v, err := strconv.ParseFloat(p.curToken.Literal, 64)
+	if err != nil {
+		p.errors = append(p.errors, fmt.Sprintf("error parsing int value. %v", p.curToken.Literal))
+		return nil
+	}
+
+	exp.Value = v
+	return exp
+}
+
 func (p *Parser) curTokenPrecedence() int {
 	if p, ok := precedenceMap[p.curToken.TokenType]; ok {
 		return p
@@ -708,4 +721,3 @@ func (p *Parser) parseObjectKey() ast.Expression {
 // function declaration
 // for loops
 // switch statements
-// objs

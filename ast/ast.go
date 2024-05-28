@@ -71,6 +71,28 @@ type IdentifierStatement struct {
 	Value Expression
 }
 
+type ArrayExpression struct {
+	Token  lexer.Token
+	Values []Expression
+}
+
+func (ae *ArrayExpression) TokenLiteral() string {
+	return ae.Token.Literal
+}
+func (ae *ArrayExpression) expressionNode() {}
+func (ae *ArrayExpression) String() string {
+	out := bytes.Buffer{}
+	out.WriteString(ae.TokenLiteral())
+	for i, item := range ae.Values {
+		out.WriteString(item.String())
+		if i != len(ae.Values)-1 {
+			out.WriteString(",")
+		}
+	}
+	out.WriteString("]")
+	return out.String()
+}
+
 func (ids *IdentifierStatement) TokenLiteral() string {
 	return ids.Token.Literal
 }

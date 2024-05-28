@@ -65,6 +65,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefixFunc(lexer.ASYNC, p.parseAsyncFuncExpression)
 	p.registerPrefixFunc(lexer.TRUE, p.parseBoolean)
 	p.registerPrefixFunc(lexer.FALSE, p.parseBoolean)
+	p.registerPrefixFunc(lexer.LPRACES, p.parseArrayExpression)
 	// infix operations
 	p.registerInfixFunc(lexer.EQUAL, p.parseInfixExpression)
 	p.registerInfixFunc(lexer.NOTEQUAL, p.parseInfixExpression)
@@ -611,6 +612,32 @@ func (p *Parser) peekTokenPrecedence() int {
 	return LOWEST
 }
 
+func (p *Parser) parseArrayExpression() ast.Expression {
+	exp := &ast.ArrayExpression{Token: p.curToken, Values: []ast.Expression{}}
+	if p.peekTokenIs(lexer.RPRACES) {
+		p.nextToken()
+		return exp
+	}
+
+	p.nextToken()
+
+	exp.Values = append(exp.Values, p.parseExpression(LOWEST))
+
+	for p.peekTokenIs(lexer.COMMA) {
+		p.nextToken()
+		p.nextToken()
+		exp.Values = append(exp.Values, p.parseExpression(LOWEST))
+	}
+
+	if !p.expectPeek(lexer.RPRACES) {
+		return nil
+	}
+
+	return exp
+}
+
 // TODO:
+// floats
 // for loops
 // switch statements
+// objs

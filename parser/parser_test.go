@@ -630,3 +630,30 @@ func TestArrayExpression(t *testing.T) {
 	}
 
 }
+
+func TestObjectExpression(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{"{abc: 12};", "{abc:12}"},
+		{"{1:abc,2:[a,b]}", "{1:abc,2:[a,b]}"},
+		{"{};", "{}"},
+	}
+
+	for _, test := range tests {
+		l := lexer.New(test.input)
+		p := New(l)
+		exp := p.parseObjectExpression()
+		checkForErrors(t, p)
+		if exp == nil {
+			t.Errorf("excpected expression not to nil")
+			return
+		}
+
+		if test.expected != exp.String() {
+			t.Errorf("expected: %s. Recieved: %s", test.expected, exp.String())
+		}
+	}
+
+}

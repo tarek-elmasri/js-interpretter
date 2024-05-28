@@ -66,6 +66,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefixFunc(lexer.TRUE, p.parseBoolean)
 	p.registerPrefixFunc(lexer.FALSE, p.parseBoolean)
 	p.registerPrefixFunc(lexer.LPRACES, p.parseArrayExpression)
+	p.registerPrefixFunc(lexer.LSQUERLI, p.parseObjectExpression)
 	// infix operations
 	p.registerInfixFunc(lexer.EQUAL, p.parseInfixExpression)
 	p.registerInfixFunc(lexer.NOTEQUAL, p.parseInfixExpression)
@@ -636,8 +637,75 @@ func (p *Parser) parseArrayExpression() ast.Expression {
 	return exp
 }
 
+func (p *Parser) parseObjectExpression() ast.Expression {
+	exp := &ast.ObjectExpression{Token: p.curToken, Values: make(map[ast.Expression]ast.Expression)}
+	if p.peekTokenIs(lexer.RSQUERLI) {
+		p.nextToken()
+		return exp
+	}
+
+	var (
+		key   ast.Expression
+		value ast.Expression
+	)
+
+	if key, value = p.parseObjectKeyValue(); key == nil || value == nil {
+		return nil
+	}
+
+	exp.Values[key] = value
+
+	for p.peekTokenIs(lexer.COMMA) {
+		p.nextToken()
+		if key, value = p.parseObjectKeyValue(); key == nil || value == nil {
+			return nil
+		}
+		exp.Values[key] = value
+	}
+
+	if !p.expectPeek(lexer.RSQUERLI) {
+		return nil
+	}
+
+	return exp
+}
+
+func (p *Parser) parseObjectKeyValue() (key, value ast.Expression) {
+	key = p.parseObjectKey()
+	if key == nil {
+		return nil, nil
+	}
+
+	if !p.expectPeek(lexer.COLON) {
+		return nil, nil
+	}
+
+	p.nextToken()
+	value = p.parseExpression(LOWEST)
+	return key, value
+}
+
+func (p *Parser) parseObjectKey() ast.Expression {
+	if p.peekTokenIs(lexer.STRING) {
+		p.nextToken()
+		return p.parseString()
+	}
+
+	if p.peekTokenIs(lexer.INT) {
+		p.nextToken()
+		return p.parseIntLiteral()
+	}
+
+	if !p.expectPeek(lexer.IDENT) {
+		return nil
+	}
+
+	return p.parseIdentifier()
+}
+
 // TODO:
 // floats
+// function declaration
 // for loops
 // switch statements
 // objs

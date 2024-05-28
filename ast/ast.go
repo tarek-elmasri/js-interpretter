@@ -76,6 +76,33 @@ type ArrayExpression struct {
 	Values []Expression
 }
 
+type ObjectExpression struct {
+	Token  lexer.Token
+	Values map[Expression]Expression
+}
+
+func (os *ObjectExpression) TokenLiteral() string {
+	return os.Token.Literal
+}
+
+func (os *ObjectExpression) expressionNode() {}
+func (os *ObjectExpression) String() string {
+	out := bytes.Buffer{}
+	out.WriteString(os.TokenLiteral())
+	count := 0
+	for k, v := range os.Values {
+		out.WriteString(k.String())
+		out.WriteString(":")
+		out.WriteString(v.String())
+		if count != len(os.Values)-1 {
+			out.WriteString(",")
+		}
+		count++
+	}
+	out.WriteString("}")
+	return out.String()
+}
+
 func (ae *ArrayExpression) TokenLiteral() string {
 	return ae.Token.Literal
 }

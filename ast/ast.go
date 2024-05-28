@@ -39,6 +39,11 @@ type Program struct {
 	Statements []Statement
 }
 
+type BooleanExpression struct {
+	Token lexer.Token
+	Value bool
+}
+
 // function abc {}
 type FunctionDeclaration struct {
 	Token      lexer.Token
@@ -410,4 +415,13 @@ func (e *IntLiteralExpression) expressionNode() {}
 
 func (e *IntLiteralExpression) String() string {
 	return e.TokenLiteral()
+}
+
+func (bs *BooleanExpression) TokenLiteral() string {
+	return bs.Token.Literal
+}
+
+func (bs *BooleanExpression) expressionNode() {}
+func (bs *BooleanExpression) String() string {
+	return bs.TokenLiteral()
 }

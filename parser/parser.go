@@ -63,6 +63,8 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefixFunc(lexer.FUNC, p.parseFunctionExpression)
 	p.registerPrefixFunc(lexer.IF, p.parseIfExpression)
 	p.registerPrefixFunc(lexer.ASYNC, p.parseAsyncFuncExpression)
+	p.registerPrefixFunc(lexer.TRUE, p.parseBoolean)
+	p.registerPrefixFunc(lexer.FALSE, p.parseBoolean)
 	// infix operations
 	p.registerInfixFunc(lexer.EQUAL, p.parseInfixExpression)
 	p.registerInfixFunc(lexer.NOTEQUAL, p.parseInfixExpression)
@@ -203,6 +205,10 @@ func (p *Parser) parseIfExpression() ast.Expression {
 
 func (p *Parser) parseString() ast.Expression {
 	return &ast.StringExpression{Token: p.curToken, Value: p.curToken.Literal}
+}
+
+func (p *Parser) parseBoolean() ast.Expression {
+	return &ast.BooleanExpression{Token: p.curToken, Value: p.currentTokenIs(lexer.TRUE)}
 }
 
 func (p *Parser) parseInterpolatedString() ast.Expression {

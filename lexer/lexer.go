@@ -35,6 +35,8 @@ const (
 	LSQUERLI           = "{"
 	LPARANC            = "("
 	RPARANC            = ")"
+	TRUE               = "true"
+	FALSE              = "false"
 	STRING             = "STRING"
 	INTERPOLATEDSTRING = "INTERPOLATEDSTRING"
 	INT                = "INT"
@@ -78,6 +80,8 @@ var keywordMap map[string]TokenType = map[string]TokenType{
 	"async":    ASYNC,
 	"await":    AWAIT,
 	"new":      NEW,
+	"true":     TRUE,
+	"false":    FALSE,
 }
 
 type Token struct {

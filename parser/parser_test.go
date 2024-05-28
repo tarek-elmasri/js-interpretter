@@ -101,6 +101,31 @@ func TestIdentifierAssignStatement(t *testing.T) {
 	}
 }
 
+func TestBooleanExpression(t *testing.T) {
+
+	test := []struct {
+		input    string
+		expected string
+	}{
+		{"true", "true"},
+		{"false;", "false"},
+	}
+
+	for _, ts := range test {
+		l := lexer.New(ts.input)
+		p := New(l)
+		exp := p.parseBoolean()
+		if exp == nil {
+			t.Errorf("expected expression not to be nil")
+			return
+		}
+
+		if exp.String() != ts.expected {
+			t.Errorf("expected expression to be %s. recieved: %s", ts.expected, exp.String())
+		}
+	}
+}
+
 func TestParseConstStatement(t *testing.T) {
 	test := []struct {
 		input    string
